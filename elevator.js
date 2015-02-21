@@ -19,6 +19,15 @@
             elevator.goingDownIndicator(!goingUp);
         }
 
+        // If other elevators are idle, check to see if they can do anything
+        function clearIdles() {
+            elevators.map(function(elevator) {
+                if (elevator.isIdle) {
+                    elevator.handleIdle();
+                }
+            });
+        }
+
         // Program all elevators
         elevators.map(function(elevator) {
             // Assuming we start at floor 0
@@ -64,7 +73,7 @@
                 var dirDelta = goingUp ? -1 : 1;
                 var waiting = goingUp ? needsDown : needsUp;
                 var destination = -1;
-                for (var i = start; i != elevator.currentFloor(); i += dirDelta) {
+                for (var i = start; i != elevator.currentFloor() + dirDelta; i += dirDelta) {
                     if (waiting[i]) {
                         destination = i;
                         break;
@@ -84,8 +93,9 @@
             // One-time thing
             var gameStarted = false;
 
-            elevator.on("idle", function() {
-                console.log('idle was called');
+            // We put this in a property because sometimes it needs
+            // to be called from clearIdles
+            elevator.handleIdle = function() {
                 // Start the game
                 if (!gameStarted) {
                     updateIndicators(goingUp, elevator);
@@ -102,11 +112,31 @@
                 if (!getNextPersonInCurrentDir()) {
                     getLastPersonInCurrentDirAndReverse();
                 }
+
+                // This function doesn't get called if an elevator remains idle
+                // (i.e. it's empty and doesn't find anything to do right when
+                //  this event is triggered)
+                // Idleness happens if we get to here and destinationQueue === []
+                if (elevator.destinationQueue.length === 0) {
+                    elevator.isIdle = true;
+                } else {
+                    elevator.isIdle = false;
+                }
+            };
+
+            // Event handlers
+            // --------------
+
+            elevator.on("idle", function() {
+                console.log('idle was called');
+                elevator.handleIdle();
+                clearIdles();
             });
             elevator.on("floor_button_pressed", function(floorNum) {
                 // Update destinations based on where people want to go
                 elevator.destinationQueue = elevator.getPressedFloors();
                 elevator.checkDestinationQueue();
+                clearIdles();
             });
             elevator.on("passing_floor", function(floorNum) {
                 console.log('passing_floor was called');
@@ -123,6 +153,7 @@
                         }
                     }
                 }
+                clearIdles();
             });
             elevator.on("stopped_at_floor", function(floorNum) {
                 console.log('stopped_at_floor was called');
@@ -133,6 +164,7 @@
                 } else {
                     needsDown[floorNum] = false;
                 }
+                clearIdles();
             });
         });
 
