@@ -2,6 +2,10 @@
 // TODO: make this work better for multiple elevators
 {
     init: function(elevators, floors) {
+        // Constants
+        var MIN_FLOOR = 0;
+        var MAX_FLOOR = floors.length - 1;
+
         // Global state
         var needsUp = []; // Whether someone at floor i wants to go up
         var needsDown = [];
@@ -9,9 +13,6 @@
             needsUp.push(false);
             needsDown.push(false);
         }
-
-        var minFloor = 0;
-        var maxFloor = floors.length - 1;
 
         // Updates an elevator's indicators
         function updateIndicators(goingUp, elevator) {
@@ -38,6 +39,9 @@
                 elevator.maxPassengerCount();
             var personLoad = 1 / elevator.maxPassengerCount(); // average weight
 
+            // One-time thing
+            var gameStarted = false;
+
             // Change direction
             function reverseDirection() {
                 goingUp = !goingUp;
@@ -49,7 +53,7 @@
             // If there is noone waiting, return false.
             function getNextPersonInCurrentDir() {
                 var dirDelta = goingUp ? 1 : -1;
-                var stop = goingUp ? maxFloor + 1 : minFloor - 1;
+                var stop = goingUp ? MAX_FLOOR + 1 : MIN_FLOOR - 1;
                 var waiting = goingUp ? needsUp : needsDown;
                 for (var i = elevator.currentFloor(); i != stop; i += dirDelta) {
                     if (waiting[i]) {
@@ -68,8 +72,8 @@
             // switch direction.
             function getLastPersonInCurrentDirAndReverse() {
                 // Get the floor of the furthest person from current pos
-                // (start at 0 or maxFloor)
-                var start = goingUp ? maxFloor : minFloor;
+                // (start at 0 or MAX_FLOOR)
+                var start = goingUp ? MAX_FLOOR : MIN_FLOOR;
                 var dirDelta = goingUp ? -1 : 1;
                 var waiting = goingUp ? needsDown : needsUp;
                 var destination = -1;
@@ -90,9 +94,6 @@
                 }
             }
 
-            // One-time thing
-            var gameStarted = false;
-
             // We put this in a property because sometimes it needs
             // to be called from clearIdles
             elevator.handleIdle = function() {
@@ -101,13 +102,13 @@
                     updateIndicators(goingUp, elevator);
                     // Go to a random floor
                     elevator.goToFloor(
-                            Math.floor(Math.random() * (maxFloor - minFloor + 1) + minFloor));
+                            Math.floor(Math.random() * (MAX_FLOOR - MIN_FLOOR + 1) + MIN_FLOOR));
                     gameStarted = true;
                 }
                 // The elevator is idle - i.e. the destination queue is empty
-                if (goingUp && elevator.currentFloor() === maxFloor) {
+                if (goingUp && elevator.currentFloor() === MAX_FLOOR) {
                     reverseDirection();
-                } else if (!goingUp && elevator.currentFloor() === minFloor) {
+                } else if (!goingUp && elevator.currentFloor() === MIN_FLOOR) {
                     reverseDirection();
                 }
                 // Check if anyone is waiting in the current direction
