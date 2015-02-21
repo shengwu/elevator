@@ -73,7 +73,7 @@
                 var dirDelta = goingUp ? -1 : 1;
                 var waiting = goingUp ? needsDown : needsUp;
                 var destination = -1;
-                for (var i = start; i != elevator.currentFloor() + dirDelta; i += dirDelta) {
+                for (var i = start; i != elevator.currentFloor(); i += dirDelta) {
                     if (waiting[i]) {
                         destination = i;
                         break;
@@ -99,7 +99,9 @@
                 // Start the game
                 if (!gameStarted) {
                     updateIndicators(goingUp, elevator);
-                    elevator.goToFloor(1);
+                    // Go to a random floor
+                    elevator.goToFloor(
+                            Math.floor(Math.random() * (maxFloor - minFloor + 1) + minFloor));
                     gameStarted = true;
                 }
                 // The elevator is idle - i.e. the destination queue is empty
@@ -172,9 +174,11 @@
         floors.map(function(floor) {
             floor.on("up_button_pressed", function() {
                 needsUp[floor.floorNum()] = true;
+                clearIdles();
             });
             floor.on("down_button_pressed", function() {
                 needsDown[floor.floorNum()] = true;
+                clearIdles();
             });
         });
     },
