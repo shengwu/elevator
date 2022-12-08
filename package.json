@@ -1,0 +1,14 @@
+{
+  "name": "elevator",
+  "version": "1.0.0",
+  "main": "elevator-2022.js",
+  "repository": "git@github.com:shengwu/elevator.git",
+  "author": "Sheng Wu <shengwu34@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.9.4"
+  },
+  "scripts": {
+    "make": "yarn tsc elevator-2022.ts; cat elevator-2022.js | sed 's/var elevatorSaga = //' | sed 's/;//g'"
+  }
+}

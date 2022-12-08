@@ -19,3 +19,12 @@ Statistics from the [perpetual demo](http://play.elevatorsaga.com/#challenge=18)
 - 13.7s avg waiting time
 - 55.3s max waiting time
 - 12585 moves
+
+
+# 2022 version
+
+Printing the compiled version that can be pasted into http://play.elevatorsaga.com/
+
+```
+yarn make
+```
