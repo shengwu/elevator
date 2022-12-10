@@ -17,7 +17,7 @@ interface Elevator {
   goingDownIndicator: (set?: boolean) => void;
   maxPassengerCount: () => number;
   loadFactor: () => number;
-  destinationDirection: () => string;
+  destinationDirection: () => "up" | "down" | "stopped";
   destinationQueue: number[];
   checkDestinationQueue: () => void;
   getPressedFloors: () => number[];
@@ -34,13 +34,63 @@ interface Floor {
 }
 
 const elevatorSaga = {
-  init: (elevators: Elevator[], floors: Floor[]) => {
-    const elevator = elevators[0];
-    elevator.on("idle", () => {
-      elevator.goToFloor(0);
-      elevator.goToFloor(1);
-      elevator.goToFloor(2);
+  closestFloor: (floorNums: number[], currentFloor: number) => {
+    let min = Infinity;
+    let minIdx = -1;
+    floorNums.map((num, idx) => {
+      const curr = Math.abs(num - currentFloor);
+      if (curr < min) {
+        min = curr;
+        minIdx = idx;
+      }
     });
+    return floorNums[minIdx];
+  },
+
+  initElevator: (elevator: Elevator, allElevators: Elevator[]) => {
+    elevator.on("idle", () => {
+      if (elevator.getPressedFloors().length > 0) {
+        const closestFloor = this.closestFloor(
+          elevator.getPressedFloors(),
+          elevator.currentFloor()
+        );
+        elevator.goToFloor(closestFloor);
+        if (closestFloor > elevator.currentFloor()) {
+          elevator.goingUpIndicator();
+        } else {
+          elevator.goingDownIndicator();
+        }
+      }
+    });
+    elevator.on("floor_button_pressed", (floorNum) => {
+      if (elevator.destinationDirection() == "stopped") {
+        elevator.goToFloor(floorNum);
+        if (floorNum > elevator.currentFloor()) {
+          elevator.goingUpIndicator();
+        } else {
+          elevator.goingDownIndicator();
+        }
+      }
+    });
+    elevator.on("passing_floor", (floorNum, direction) => {
+      if (
+        elevator.destinationDirection() == direction &&
+        elevator.getPressedFloors().includes(floorNum)
+      ) {
+        elevator.goToFloor(floorNum, true);
+      }
+    });
+    elevator.on("stopped_at_floor", (floorNum) => {});
+  },
+
+  initFloor: (floor: Floor, allFloors: Floor[]) => {
+    floor.on("up_button_pressed", () => {});
+    floor.on("down_button_pressed", () => {});
+  },
+
+  init: (elevators: Elevator[], floors: Floor[]) => {
+    elevators.map((elevator) => this.initElevator(elevator, elevators));
+    floors.map((floor) => this.initFloor(floor, floors));
   },
 
   update: (dt: number, elevators: Elevator[], floors: Floor[]) => {},
