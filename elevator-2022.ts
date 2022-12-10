@@ -34,7 +34,7 @@ interface Floor {
 }
 
 const elevatorSaga = {
-  closestFloor: (floorNums: number[], currentFloor: number) => {
+  closestFloor: function (floorNums: number[], currentFloor: number) {
     let min = Infinity;
     let minIdx = -1;
     floorNums.map((num, idx) => {
@@ -47,7 +47,7 @@ const elevatorSaga = {
     return floorNums[minIdx];
   },
 
-  initElevator: (elevator: Elevator, allElevators: Elevator[]) => {
+  initElevator: function (elevator: Elevator, allElevators: Elevator[]) {
     elevator.on("idle", () => {
       if (elevator.getPressedFloors().length > 0) {
         const closestFloor = this.closestFloor(
@@ -62,7 +62,7 @@ const elevatorSaga = {
         }
       }
     });
-    elevator.on("floor_button_pressed", (floorNum) => {
+    elevator.on("floor_button_pressed", (floorNum: number) => {
       if (elevator.destinationDirection() == "stopped") {
         elevator.goToFloor(floorNum);
         if (floorNum > elevator.currentFloor()) {
@@ -72,26 +72,31 @@ const elevatorSaga = {
         }
       }
     });
-    elevator.on("passing_floor", (floorNum, direction) => {
-      if (
-        elevator.destinationDirection() == direction &&
-        elevator.getPressedFloors().includes(floorNum)
-      ) {
-        elevator.goToFloor(floorNum, true);
+    elevator.on(
+      "passing_floor",
+      (floorNum: number, direction: "up" | "down") => {
+        if (
+          elevator.destinationDirection() == direction &&
+          elevator.getPressedFloors().includes(floorNum)
+        ) {
+          elevator.goToFloor(floorNum, true);
+        }
       }
-    });
-    elevator.on("stopped_at_floor", (floorNum) => {});
+    );
+    elevator.on("stopped_at_floor", (floorNum: number) => {});
   },
 
-  initFloor: (floor: Floor, allFloors: Floor[]) => {
+  initFloor: function (floor: Floor, allFloors: Floor[]) {
     floor.on("up_button_pressed", () => {});
     floor.on("down_button_pressed", () => {});
   },
 
-  init: (elevators: Elevator[], floors: Floor[]) => {
-    elevators.map((elevator) => this.initElevator(elevator, elevators));
-    floors.map((floor) => this.initFloor(floor, floors));
+  init: function (elevators: Elevator[], floors: Floor[]) {
+    const initElevator = this.initElevator;
+    const initFloor = this.initFloor;
+    elevators.map((elevator) => initElevator(elevator, elevators));
+    floors.map((floor) => initFloor(floor, floors));
   },
 
-  update: (dt: number, elevators: Elevator[], floors: Floor[]) => {},
+  update: function (dt: number, elevators: Elevator[], floors: Floor[]) {},
 };
