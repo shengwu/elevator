@@ -48,8 +48,11 @@ const elevatorSaga = {
       return floorNums[minIdx];
     };
 
-    const checkIdleElevator = (elevator: Elevator) => {
-      if (elevator.getPressedFloors().length > 0) {
+    const checkIdleElevator = (elevator: Elevator, floorNum?: number) => {
+      const notGoingToFloor =
+        floorNum !== undefined &&
+        !elevator.getPressedFloors().includes(floorNum);
+      if (notGoingToFloor || elevator.getPressedFloors().length === 0) {
         const closestFloor = getClosestFloor(
           elevator.getPressedFloors(),
           elevator.currentFloor()
@@ -67,7 +70,10 @@ const elevatorSaga = {
       elevators.map(checkIdleElevator);
     };
 
-    const initElevator = (elevator: Elevator, allElevators: Elevator[]) => {
+    const initElevator = (elevator: Elevator) => {
+      elevator.goingUpIndicator(false);
+      elevator.goingDownIndicator(false);
+
       elevator.on("idle", () => {
         checkIdleElevator(elevator);
       });
@@ -95,13 +101,13 @@ const elevatorSaga = {
       elevator.on("stopped_at_floor", (floorNum: number) => {});
     };
 
-    const initFloor = (floor: Floor, elevators: Elevator[]) => {
+    const initFloor = (floor: Floor) => {
       floor.on("up_button_pressed", () => checkIdleElevators(elevators));
       floor.on("down_button_pressed", () => checkIdleElevators(elevators));
     };
 
-    elevators.map((elevator) => initElevator(elevator, elevators));
-    floors.map((floor) => initFloor(floor, elevators));
+    elevators.map(initElevator);
+    floors.map(initFloor);
   },
   update: function (dt: number, elevators: Elevator[], floors: Floor[]) {},
 };
