@@ -6,7 +6,7 @@
   "author": "Sheng Wu <shengwu34@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "make": "yarn tsc elevator-2022.ts; cat elevator-2022.js | sed 's/var elevatorSaga = //' | sed 's/;//g' | sed 's/var _this = this//g' | sed 's/_this/this/g'"
+    "make": "yarn tsc elevator-2022.ts; cat elevator-2022.js | sed 's/var elevatorSaga = //' | sed 's/;//g' | sed 's/var _this = this//g' | sed 's/_this/this/g' | pbcopy"
   },
   "devDependencies": {
     "typescript": "^4.9.4",

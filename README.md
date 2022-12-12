@@ -23,7 +23,7 @@ Statistics from the [perpetual demo](http://play.elevatorsaga.com/#challenge=18)
 
 # 2022 version
 
-Printing the compiled version that can be pasted into http://play.elevatorsaga.com/
+Copies the compiled-to-JS version to your clipboard:
 
 ```
 yarn make
