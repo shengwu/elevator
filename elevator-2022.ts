@@ -35,6 +35,19 @@ interface Floor {
 
 const elevatorSaga = {
   init: function (elevators: Elevator[], floors: Floor[]) {
+    const upNeeded: Record<number, boolean> = {};
+    const downNeeded: Record<number, boolean> = {};
+
+    const asArray = (rec: Record<number, boolean>): number[] => {
+      const result = [];
+      for (let i = 0; i < floors.length; i++) {
+        if (rec[i + 1]) {
+          result.push(i + 1);
+        }
+      }
+      return result;
+    };
+
     const getClosestFloor = (floorNums: number[], currentFloor: number) => {
       let min = Infinity;
       let minIdx = -1;
@@ -45,30 +58,39 @@ const elevatorSaga = {
           minIdx = idx;
         }
       });
+      if (minIdx === -1) {
+        return undefined;
+      }
       return floorNums[minIdx];
     };
 
     const checkIdleElevator = (elevator: Elevator, floorNum?: number) => {
-      const notGoingToFloor =
-        floorNum !== undefined &&
-        !elevator.getPressedFloors().includes(floorNum);
-      if (notGoingToFloor || elevator.getPressedFloors().length === 0) {
-        const closestFloor = getClosestFloor(
-          elevator.getPressedFloors(),
+      if (elevator.getPressedFloors().length === 0) {
+        requestElevator(elevator);
+      }
+    };
+
+    const requestElevator = (elevator: Elevator) => {
+      const closestFloorNeedingUp = getClosestFloor(
+        asArray(upNeeded),
+        elevator.currentFloor()
+      );
+      if (closestFloorNeedingUp) {
+        elevator.goingUpIndicator();
+        elevator.goToFloor(closestFloorNeedingUp);
+      } else {
+        const closestFloorNeedingDoqn = getClosestFloor(
+          asArray(downNeeded),
           elevator.currentFloor()
         );
-        elevator.goToFloor(closestFloor);
-        if (closestFloor > elevator.currentFloor()) {
-          elevator.goingUpIndicator();
-        } else {
+        if (closestFloorNeedingDoqn) {
           elevator.goingDownIndicator();
+          elevator.goToFloor(closestFloorNeedingDoqn);
         }
       }
     };
 
-    const checkIdleElevators = (elevators: Elevator[]) => {
-      elevators.map(checkIdleElevator);
-    };
+    const checkIdleElevators = () => elevators.map(checkIdleElevator);
 
     const initElevator = (elevator: Elevator) => {
       elevator.goingUpIndicator(false);
@@ -78,23 +100,17 @@ const elevatorSaga = {
         checkIdleElevator(elevator);
       });
       elevator.on("floor_button_pressed", (floorNum: number) => {
-        if (elevator.destinationDirection() == "stopped") {
-          elevator.goToFloor(floorNum);
-          if (floorNum > elevator.currentFloor()) {
-            elevator.goingUpIndicator();
-          } else {
-            elevator.goingDownIndicator();
-          }
-        }
+        elevator.goToFloor(floorNum);
       });
       elevator.on(
         "passing_floor",
         (floorNum: number, direction: "up" | "down") => {
-          if (
-            elevator.destinationDirection() == direction &&
-            elevator.getPressedFloors().includes(floorNum)
-          ) {
+          if (direction === "up" && upNeeded[floorNum]) {
             elevator.goToFloor(floorNum, true);
+            upNeeded[floorNum] = false;
+          } else if (direction === "down" && downNeeded[floorNum]) {
+            elevator.goToFloor(floorNum, true);
+            downNeeded[floorNum] = false;
           }
         }
       );
@@ -102,12 +118,19 @@ const elevatorSaga = {
     };
 
     const initFloor = (floor: Floor) => {
-      floor.on("up_button_pressed", () => checkIdleElevators(elevators));
-      floor.on("down_button_pressed", () => checkIdleElevators(elevators));
+      floor.on("up_button_pressed", () => {
+        upNeeded[floor.floorNum()] = true;
+        checkIdleElevators();
+      });
+      floor.on("down_button_pressed", () => {
+        downNeeded[floor.floorNum()] = true;
+        checkIdleElevators();
+      });
     };
 
     elevators.map(initElevator);
     floors.map(initFloor);
   },
+
   update: function (dt: number, elevators: Elevator[], floors: Floor[]) {},
 };
