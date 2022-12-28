@@ -43,12 +43,13 @@ interface Floor {
 
 const elevatorSaga = {
   init: function (elevators: Elevator[], floors: Floor[]) {
-    elevators.map((elevator: Elevator) => {
+    const initElevator = (elevator: Elevator) => {
       elevator.on("floor_button_pressed", (floorNum: number) => {
         elevator.goToFloor(floorNum);
       });
-    });
-    floors.map((floor: Floor) => {
+    };
+
+    const initFloor = (floor: Floor) => {
       floor.on("up_button_pressed", () => {
         let minLoadFactor = elevators[0].loadFactor();
         let minLoadElevator = elevators[0];
@@ -60,7 +61,10 @@ const elevatorSaga = {
         }
         minLoadElevator.goToFloor(floor.floorNum());
       });
-    });
+    };
+
+    elevators.map(initElevator);
+    floors.map(initFloor);
   },
   update: function (dt: unknown, elevators: Elevator[], floors: Floor[]) {},
 };
