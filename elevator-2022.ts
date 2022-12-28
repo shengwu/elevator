@@ -38,6 +38,8 @@ const elevatorSaga = {
     const upNeeded: Record<number, boolean> = {};
     const downNeeded: Record<number, boolean> = {};
 
+    // turns upNeeded {floor 4 => true} someone pressed Up on 4
+    // into [4]
     const asArray = (rec: Record<number, boolean>): number[] => {
       const result = [];
       for (let i = 0; i < floors.length; i++) {
@@ -132,5 +134,5 @@ const elevatorSaga = {
     floors.map(initFloor);
   },
 
-  update: function (dt: number, elevators: Elevator[], floors: Floor[]) {},
+  update: function (dt: unknown, elevators: Elevator[], floors: Floor[]) {},
 };
