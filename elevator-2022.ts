@@ -49,18 +49,21 @@ const elevatorSaga = {
       });
     };
 
-    const initFloor = (floor: Floor) => {
-      floor.on("up_button_pressed", () => {
-        let minLoadFactor = elevators[0].loadFactor();
-        let minLoadElevator = elevators[0];
-        for (const elevator of elevators) {
-          if (elevator.loadFactor() < minLoadFactor) {
-            minLoadFactor = elevator.loadFactor();
-            minLoadElevator = elevator;
-          }
+    const onFloorButtonPress = (floor: Floor) => {
+      let minLoadFactor = elevators[0].loadFactor();
+      let minLoadElevator = elevators[0];
+      for (const elevator of elevators) {
+        if (elevator.loadFactor() < minLoadFactor) {
+          minLoadFactor = elevator.loadFactor();
+          minLoadElevator = elevator;
         }
-        minLoadElevator.goToFloor(floor.floorNum());
-      });
+      }
+      minLoadElevator.goToFloor(floor.floorNum());
+    };
+
+    const initFloor = (floor: Floor) => {
+      floor.on("up_button_pressed", () => onFloorButtonPress(floor));
+      // floor.on("down_button_pressed", () => onFloorButtonPress(floor));
     };
 
     elevators.map(initElevator);
