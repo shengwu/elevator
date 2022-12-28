@@ -1,3 +1,7 @@
+// -----
+// Types
+// -----
+
 type ElevatorEvent =
   | "idle"
   | "floor_button_pressed"
@@ -33,106 +37,30 @@ interface Floor {
   buttonStates: { down: string; up: string };
 }
 
+// --------------
+// Implementation
+// --------------
+
 const elevatorSaga = {
   init: function (elevators: Elevator[], floors: Floor[]) {
-    const upNeeded: Record<number, boolean> = {};
-    const downNeeded: Record<number, boolean> = {};
-
-    // turns upNeeded {floor 4 => true} someone pressed Up on 4
-    // into [4]
-    const asArray = (rec: Record<number, boolean>): number[] => {
-      const result = [];
-      for (let i = 0; i < floors.length; i++) {
-        if (rec[i + 1]) {
-          result.push(i + 1);
-        }
-      }
-      return result;
-    };
-
-    const getClosestFloor = (floorNums: number[], currentFloor: number) => {
-      let min = Infinity;
-      let minIdx = -1;
-      floorNums.map((num, idx) => {
-        const curr = Math.abs(num - currentFloor);
-        if (curr < min) {
-          min = curr;
-          minIdx = idx;
-        }
-      });
-      if (minIdx === -1) {
-        return undefined;
-      }
-      return floorNums[minIdx];
-    };
-
-    const checkIdleElevator = (elevator: Elevator, floorNum?: number) => {
-      if (elevator.getPressedFloors().length === 0) {
-        requestElevator(elevator);
-      }
-    };
-
-    const requestElevator = (elevator: Elevator) => {
-      const closestFloorNeedingUp = getClosestFloor(
-        asArray(upNeeded),
-        elevator.currentFloor()
-      );
-      if (closestFloorNeedingUp) {
-        elevator.goingUpIndicator();
-        elevator.goToFloor(closestFloorNeedingUp);
-      } else {
-        const closestFloorNeedingDoqn = getClosestFloor(
-          asArray(downNeeded),
-          elevator.currentFloor()
-        );
-        if (closestFloorNeedingDoqn) {
-          elevator.goingDownIndicator();
-          elevator.goToFloor(closestFloorNeedingDoqn);
-        }
-      }
-    };
-
-    const checkIdleElevators = () => elevators.map(checkIdleElevator);
-
-    const initElevator = (elevator: Elevator) => {
-      elevator.goingUpIndicator(false);
-      elevator.goingDownIndicator(false);
-
-      elevator.on("idle", () => {
-        checkIdleElevator(elevator);
-      });
+    elevators.map((elevator: Elevator) => {
       elevator.on("floor_button_pressed", (floorNum: number) => {
         elevator.goToFloor(floorNum);
       });
-      elevator.on(
-        "passing_floor",
-        (floorNum: number, direction: "up" | "down") => {
-          if (direction === "up" && upNeeded[floorNum]) {
-            elevator.goToFloor(floorNum, true);
-            upNeeded[floorNum] = false;
-          } else if (direction === "down" && downNeeded[floorNum]) {
-            elevator.goToFloor(floorNum, true);
-            downNeeded[floorNum] = false;
+    });
+    floors.map((floor: Floor) => {
+      floor.on("up_button_pressed", () => {
+        let minLoadFactor = elevators[0].loadFactor();
+        let minLoadElevator = elevators[0];
+        for (const elevator of elevators) {
+          if (elevator.loadFactor() < minLoadFactor) {
+            minLoadFactor = elevator.loadFactor();
+            minLoadElevator = elevator;
           }
         }
-      );
-      elevator.on("stopped_at_floor", (floorNum: number) => {});
-    };
-
-    const initFloor = (floor: Floor) => {
-      floor.on("up_button_pressed", () => {
-        upNeeded[floor.floorNum()] = true;
-        checkIdleElevators();
+        minLoadElevator.goToFloor(floor.floorNum());
       });
-      floor.on("down_button_pressed", () => {
-        downNeeded[floor.floorNum()] = true;
-        checkIdleElevators();
-      });
-    };
-
-    elevators.map(initElevator);
-    floors.map(initFloor);
+    });
   },
-
   update: function (dt: unknown, elevators: Elevator[], floors: Floor[]) {},
 };
