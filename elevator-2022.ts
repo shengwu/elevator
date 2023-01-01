@@ -66,13 +66,16 @@ const elevatorSaga = {
 
     const upRequestedFloors: Record<number, boolean> = {};
     const downRequestedFloors: Record<number, boolean> = {};
-    const initElevatorMaxThroughput = (elevator: Elevator) => {
+    const initElevatorMaxThroughput = (
+      elevator: Elevator,
+      elevatorNum: number
+    ) => {
       // Can't rely on elevator.destinationDirection()
       let direction = "up";
       // direction = direction === "up" ? "down" : "up";
       elevator.on("idle", () => {
         console.log(
-          `Elevator idle; direction: ${direction}; pressed floors: ${elevator.getPressedFloors()}`
+          `Elevator ${elevatorNum} idle; direction: ${direction}; pressed floors: ${elevator.getPressedFloors()}`
         );
         // Reverse direction if at top or bottom
         const goingUpAndAtTop =
@@ -110,67 +113,75 @@ const elevatorSaga = {
         // Otherwise, go to the next floor
         if (direction === "up") {
           for (let i = elevator.currentFloor() + 1; i < floors.length; i++) {
-            if (upRequestedFloors[i] && elevator.loadFactor() < 1) {
+            const otherElevatorsGoingToFloor = elevators.some(
+              (curr) =>
+                curr !== elevator &&
+                curr.destinationQueue.includes(i) &&
+                curr.destinationDirection() === "up"
+            );
+            if (
+              upRequestedFloors[i] &&
+              elevator.loadFactor() < 1 &&
+              !otherElevatorsGoingToFloor
+            ) {
               elevator.goToFloor(i);
-              break;
+              return;
             }
             if (elevator.getPressedFloors().includes(i)) {
               elevator.goToFloor(i);
-              break;
+              return;
             }
           }
           // No destinations. Go to the first floor with people on it
           const firstDownRequestedFloor = floors
             .slice(elevator.currentFloor() + 1)
             .find((floor) => downRequestedFloors[floor.floorNum()]);
-          if (firstDownRequestedFloor) {
+          if (
+            elevator.destinationQueue.length === 0 &&
+            firstDownRequestedFloor
+          ) {
             elevator.goToFloor(firstDownRequestedFloor.floorNum());
           }
           // Last resort
           if (elevator.destinationQueue.length === 0) {
             // elevator.goToFloor(elevator.currentFloor() + 1);
+            // Usually more people waiting on the ground floor
             elevator.goToFloor(0);
           }
         } else if (direction === "down") {
           for (let i = elevator.currentFloor() - 1; i >= 0; i--) {
-            if (downRequestedFloors[i] && elevator.loadFactor() < 1) {
+            const otherElevatorsGoingToFloor = elevators.some(
+              (curr) =>
+                curr !== elevator &&
+                curr.destinationQueue.includes(i) &&
+                curr.destinationDirection() === "down"
+            );
+            if (
+              downRequestedFloors[i] &&
+              elevator.loadFactor() < 1 &&
+              !otherElevatorsGoingToFloor
+            ) {
               elevator.goToFloor(i);
-              break;
+              return;
             }
             if (elevator.getPressedFloors().includes(i)) {
               elevator.goToFloor(i);
-              break;
+              return;
             }
           }
           // No destinations. Go to the first floor with people on it
           const firstUpRequestedFloor = floors
             .slice(elevator.currentFloor() + 1)
             .find((floor) => upRequestedFloors[floor.floorNum()]);
-          if (firstUpRequestedFloor) {
+          if (elevator.destinationQueue.length === 0 && firstUpRequestedFloor) {
             elevator.goToFloor(firstUpRequestedFloor.floorNum());
           }
           // Last resort
           if (elevator.destinationQueue.length === 0) {
             // elevator.goToFloor(elevator.currentFloor() - 1);
+            // Usually more people waiting on the ground floor
             elevator.goToFloor(0);
           }
-        }
-      });
-
-      // If we can pick people up
-      elevator.on("passing_floor", (floorNum: number) => {
-        if (
-          direction === "up" &&
-          upRequestedFloors[floorNum] &&
-          elevator.loadFactor() < 1
-        ) {
-          elevator.goToFloor(floorNum, true);
-        } else if (
-          direction === "down" &&
-          downRequestedFloors[floorNum] &&
-          elevator.loadFactor() < 1
-        ) {
-          elevator.goToFloor(floorNum, true);
         }
       });
 
@@ -194,7 +205,11 @@ const elevatorSaga = {
       );
     };
 
-    const levelNumber = parseInt(window.location.href.match(/\d+/)[0]);
+    const levelNumber = parseInt(
+      window.location.href.match(/\d+/)
+        ? window.location.href.match(/\d+/)[0]
+        : "0"
+    );
     if ([8, 9].includes(levelNumber)) {
       elevators.map(initElevatorMinWait);
       floors.map(initFloorMinWait);
