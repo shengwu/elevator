@@ -64,6 +64,8 @@ const elevatorSaga = {
       floor.on("down_button_pressed", () => onFloorButtonPressMinWait(floor));
     };
 
+    // TODO: still a bug where we stop at floors with a full elevator + noone getting off
+    // residual destination queue?
     const upRequestedFloors: Record<number, boolean> = {};
     const downRequestedFloors: Record<number, boolean> = {};
     const initElevatorMaxThroughput = (
@@ -210,7 +212,10 @@ const elevatorSaga = {
         ? window.location.href.match(/\d+/)[0]
         : "0"
     );
-    if ([8, 9].includes(levelNumber)) {
+    if (
+      [8, 9].includes(levelNumber) ||
+      (levelNumber >= 11 && levelNumber <= 15)
+    ) {
       elevators.map(initElevatorMinWait);
       floors.map(initFloorMinWait);
     } else {

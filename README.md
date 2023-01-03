@@ -37,3 +37,22 @@ yarn make
   - ignore buttons pressed at floors. each elevator goes up, picking people up til it's full, dropping people off as it goes. then: arrive at highest floor with down button pressed. pick people up, go into "down mode"
   - our strategy right now (sending min load elevator to floor where button is pressed) seems to handle the max latency levels well but isn't consistent on the max throughput levels, even the easier ones. maybe we prioritze stopping at floors that have a ton of people waiting - because we're not penalized for max wait time
 
+Stats from rerunning my 2022 code
+
+- Transported: 2002
+- Elapsed time: 1351s
+- Transported/s: 1.48
+- Avg waiting time: 14.7s
+- Max waiting time: 157.9s
+- Moves: 12703
+
+Stats from rerunning my 2015 code
+
+- Transported: 2008
+- Elapsed time: 1351s
+- Transported/s: 1.49
+- Avg waiting time: 14.2s
+- Max waiting time: 89.5s
+- Moves: 12602
+
+My newer implementation is slightly worse
