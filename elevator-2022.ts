@@ -75,6 +75,9 @@ const elevatorSaga = {
       // Can't rely on elevator.destinationDirection()
       let direction = "up";
 
+      const maxLoad =
+        (elevator.maxPassengerCount() - 2) / elevator.maxPassengerCount();
+
       const goToFloorAndSetLights = (floorNum: number) => {
         elevator.goToFloor(floorNum);
         // Put "top floor" detection upfront
@@ -92,7 +95,7 @@ const elevatorSaga = {
 
       elevator.on("idle", () => {
         console.log(
-          `Elevator ${elevatorNum} idle; direction: ${direction}; pressed floors: ${elevator.getPressedFloors()}`
+          `Elevator ${elevatorNum} idle; direction: ${direction}; pressed floors: ${elevator.getPressedFloors()}, load: ${elevator.loadFactor()}`
         );
         // Reverse direction if at top or bottom
         const goingUpAndAtTop =
@@ -138,7 +141,7 @@ const elevatorSaga = {
             );
             if (
               upRequestedFloors[i] &&
-              elevator.loadFactor() < 1 &&
+              elevator.loadFactor() < maxLoad &&
               !otherElevatorsGoingToFloor
             ) {
               return goToFloorAndSetLights(i);
@@ -171,7 +174,7 @@ const elevatorSaga = {
             );
             if (
               downRequestedFloors[i] &&
-              elevator.loadFactor() < 1 &&
+              elevator.loadFactor() < maxLoad &&
               !otherElevatorsGoingToFloor
             ) {
               return goToFloorAndSetLights(i);
