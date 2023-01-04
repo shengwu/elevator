@@ -74,7 +74,22 @@ const elevatorSaga = {
     ) => {
       // Can't rely on elevator.destinationDirection()
       let direction = "up";
-      // direction = direction === "up" ? "down" : "up";
+
+      const goToFloorAndSetLights = (floorNum: number) => {
+        elevator.goToFloor(floorNum);
+        // Put "top floor" detection upfront
+        if (floorNum === floors.length - 1) {
+          elevator.goingUpIndicator(false);
+          elevator.goingDownIndicator(true);
+        } else if (floorNum === 0 || floorNum > elevator.currentFloor()) {
+          elevator.goingUpIndicator(true);
+          elevator.goingDownIndicator(false);
+        } else if (floorNum < elevator.currentFloor()) {
+          elevator.goingUpIndicator(false);
+          elevator.goingDownIndicator(true);
+        }
+      };
+
       elevator.on("idle", () => {
         console.log(
           `Elevator ${elevatorNum} idle; direction: ${direction}; pressed floors: ${elevator.getPressedFloors()}`
@@ -126,12 +141,10 @@ const elevatorSaga = {
               elevator.loadFactor() < 1 &&
               !otherElevatorsGoingToFloor
             ) {
-              elevator.goToFloor(i);
-              return;
+              return goToFloorAndSetLights(i);
             }
             if (elevator.getPressedFloors().includes(i)) {
-              elevator.goToFloor(i);
-              return;
+              return goToFloorAndSetLights(i);
             }
           }
           // No destinations. Go to the first floor with people on it
@@ -142,14 +155,12 @@ const elevatorSaga = {
             elevator.destinationQueue.length === 0 &&
             firstDownRequestedFloor
           ) {
-            elevator.goToFloor(firstDownRequestedFloor.floorNum());
+            return goToFloorAndSetLights(firstDownRequestedFloor.floorNum());
           }
           // Last resort
-          if (elevator.destinationQueue.length === 0) {
-            // elevator.goToFloor(elevator.currentFloor() + 1);
-            // Usually more people waiting on the ground floor
-            elevator.goToFloor(0);
-          }
+          // elevator.goToFloor(elevator.currentFloor() + 1);
+          // Usually more people waiting on the ground floor
+          return goToFloorAndSetLights(0);
         } else if (direction === "down") {
           for (let i = elevator.currentFloor() - 1; i >= 0; i--) {
             const otherElevatorsGoingToFloor = elevators.some(
@@ -163,12 +174,10 @@ const elevatorSaga = {
               elevator.loadFactor() < 1 &&
               !otherElevatorsGoingToFloor
             ) {
-              elevator.goToFloor(i);
-              return;
+              return goToFloorAndSetLights(i);
             }
             if (elevator.getPressedFloors().includes(i)) {
-              elevator.goToFloor(i);
-              return;
+              return goToFloorAndSetLights(i);
             }
           }
           // No destinations. Go to the first floor with people on it
@@ -176,14 +185,12 @@ const elevatorSaga = {
             .slice(elevator.currentFloor() + 1)
             .find((floor) => upRequestedFloors[floor.floorNum()]);
           if (elevator.destinationQueue.length === 0 && firstUpRequestedFloor) {
-            elevator.goToFloor(firstUpRequestedFloor.floorNum());
+            return goToFloorAndSetLights(firstUpRequestedFloor.floorNum());
           }
           // Last resort
-          if (elevator.destinationQueue.length === 0) {
-            // elevator.goToFloor(elevator.currentFloor() - 1);
-            // Usually more people waiting on the ground floor
-            elevator.goToFloor(0);
-          }
+          // elevator.goToFloor(elevator.currentFloor() - 1);
+          // Usually more people waiting on the ground floor
+          return goToFloorAndSetLights(0);
         }
       });
 
